@@ -1,6 +1,17 @@
 version: "3" 
 
 services:
+    portainer:
+        image: portainer/portainer
+        container_name: portainer
+        command: -H unix:///var/run/docker.sock
+        ports:
+        - 9000:9000
+        - 8000:8000
+        volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ${HOME_PATH}/portainer/data:/data
+        restart: always
     ouroboros: # Automatically update your containers
         container_name: ouroboros
         image: pyouroboros/ouroboros
@@ -14,9 +25,9 @@ services:
         volumes:
         - /var/run/docker.sock:/var/run/docker.sock
         restart: unless-stopped
-    letsencrypt: # give certificates for HTTPS
+    swag: # give certificates for HTTPS
         image: linuxserver/swag
-        container_name: letsencrypt
+        container_name: swag 
         cap_add:
         - NET_ADMIN
         environment:
@@ -24,7 +35,7 @@ services:
         - PGID=1000
         - TZ=Europe/Oslo
         - URL=${DOMAIN} 
-        - SUBDOMAINS=vpn,cloud,mail,git #,phpldapadmin,phpmyadmin
+        - SUBDOMAINS=vpn,cloud,mail,git,portainer #,phpldapadmin,phpmyadmin
         - VALIDATION=http
         - EMAIL=kibkibk@gmail.com #optional
         - DHLEVEL=2048 #optional
