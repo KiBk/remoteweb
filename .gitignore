@@ -1,0 +1,10 @@
+letsencrypt/**
+mariadb/**
+nextcloud/**
+openldap/**
+openvpn-as/**
+phpmyadmin/**
+
+secrets/**
+
+.env

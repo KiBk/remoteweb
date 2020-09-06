@@ -1,0 +1,131 @@
+version: "3" 
+
+services:
+    ouroboros: # Automatically update your containers
+        container_name: ouroboros
+        image: pyouroboros/ouroboros
+        environment:
+        - CLEANUP=true
+        - INTERVAL=300
+        - LOG_LEVEL=info
+        - SELF_UPDATE=true
+        - IGNORE=mongo influxdb postgres mariadb 
+        - TZ=Europe/Oslo
+        volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        restart: unless-stopped
+    letsencrypt: # give certificates for HTTPS
+        image: linuxserver/swag
+        container_name: letsencrypt
+        cap_add:
+        - NET_ADMIN
+        environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/Oslo
+        - URL=${DOMAIN} 
+        - SUBDOMAINS=vpn,cloud,mail,git #,phpldapadmin,phpmyadmin
+        - VALIDATION=http
+        - EMAIL=kibkibk@gmail.com #optional
+        - DHLEVEL=2048 #optional
+        # - ONLY_SUBDOMAINS=false #optional
+        # - EXTRA_DOMAINS= #optional
+        # - STAGING=false #optional
+        volumes:
+        - ${HOME_PATH}/letsencrypt/config:/config
+        ports:
+        - 443:443
+        - 80:80 # I don't need any http accesses
+        networks:
+        - mailcowdockerized_mailcow-network
+        - default
+        restart: unless-stopped
+    openvpn-as:
+        image: linuxserver/openvpn-as
+        container_name: openvpn-as
+        cap_add:
+        - NET_ADMIN
+        environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/Oslo
+        # - INTERFACE=eth0 #optional
+        volumes:
+        - ${HOME_PATH}/openvpn-as/config:/config
+        ports: 
+        # - 943:943 # Using letsencrypt
+        - 9443:9443
+        - 1194:1194/udp
+        restart: unless-stopped
+    mariadb: # Database
+        image: linuxserver/mariadb
+        container_name: mariadb
+        environment:
+        - PUID=1000
+        - PGID=1000
+        - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+        - TZ=Europe/Oslo
+        - MYSQL_DATABASE=${MYSQL_DATABASE} #optional
+        - MYSQL_USER=${MYSQL_USER} #optional
+        - MYSQL_PASSWORD=${MYSQL_PASSWORD} #optional
+        # - REMOTE_SQL=http://URL1/your.sql,https://URL2/your.sql #optional
+        volumes:
+        - ${HOME_PATH}/mariadb/config:/config
+        ports:
+        - 3306:3306
+        restart: unless-stopped
+    # phpmyadmin:
+    #     image: phpmyadmin/phpmyadmin
+    #     container_name: phpmyadmin
+    #     environment:
+    #     - PMA_ARBITRARY=1
+    #     # ports:
+    #     # - 8081:80
+    #     volumes:
+    #     - ${HOME_PATH}/phpmyadmin/config:/sessions
+    #     restart: unless-stopped
+    nextcloud:
+        image: linuxserver/nextcloud
+        container_name: nextcloud
+        environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/Oslo
+        volumes:
+        - ${HOME_PATH}/nextcloud/config:/config
+        - ${DATA_PATH}/Cloud:/data
+        # ports:
+        # - 443:443 # Comes from letsencrypt app
+        restart: unless-stopped
+        depends_on:
+        - mariadb
+    gitea:
+        image: gitea/gitea:latest
+        container_name: gitea
+        environment:
+        - USER_UID=1000
+        - USER_GID=1000
+        - SSH_PORT=222
+        - SSH_DOMAIN=${GITEA_SSH_DOMAIN}
+        - ROOT_URL=${GITEA_ROOT_URL}
+        - DOMAIN=${GITEA_DOMAIN}
+        - DB_TYPE=mysql
+        - DB_HOST="mariadb:3306"
+        - DB_NAME=${MYSQL_DATABASE}
+        - DB_USER=${MYSQL_USER}
+        - DB_PASSWD=${MYSQL_PASSWORD}
+        - DISABLE_REGISTRATION=true
+        restart: unless-stopped
+        volumes:
+        - ${DATA_PATH}/gitea:/data
+        - /etc/timezone:/etc/timezone:ro
+        - /etc/localtime:/etc/localtime:ro
+        ports:
+        - "3000:3000"
+        - "222:22"
+        depends_on:
+        - mariadb
+
+networks:
+    mailcowdockerized_mailcow-network:
+        external: true
