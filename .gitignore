@@ -4,6 +4,8 @@ nextcloud/**
 openldap/**
 openvpn-as/**
 phpmyadmin/**
+portainer/**
+duplicati/**
 
 secrets/**
 

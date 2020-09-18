@@ -35,7 +35,7 @@ services:
         - PGID=1000
         - TZ=Europe/Oslo
         - URL=${DOMAIN} 
-        - SUBDOMAINS=vpn,cloud,mail,git,portainer #,phpldapadmin,phpmyadmin
+        - SUBDOMAINS=vpn,cloud,mail,git,portainer,duplicati #,phpldapadmin,phpmyadmin
         - VALIDATION=http
         - EMAIL=kibkibk@gmail.com #optional
         - DHLEVEL=2048 #optional
@@ -51,23 +51,23 @@ services:
         - mailcowdockerized_mailcow-network
         - default
         restart: unless-stopped
-    openvpn-as:
-        image: linuxserver/openvpn-as
-        container_name: openvpn-as
-        cap_add:
-        - NET_ADMIN
-        environment:
-        - PUID=1000
-        - PGID=1000
-        - TZ=Europe/Oslo
-        # - INTERFACE=eth0 #optional
-        volumes:
-        - ${HOME_PATH}/openvpn-as/config:/config
-        ports: 
-        # - 943:943 # Using letsencrypt
-        - 9443:9443
-        - 1194:1194/udp
-        restart: unless-stopped
+    # openvpn-as:
+    #     image: linuxserver/openvpn-as
+    #     container_name: openvpn-as
+    #     cap_add:
+    #     - NET_ADMIN
+    #     environment:
+    #     - PUID=1000
+    #     - PGID=1000
+    #     - TZ=Europe/Oslo
+    #     # - INTERFACE=eth0 #optional
+    #     volumes:
+    #     - ${HOME_PATH}/openvpn-as/config:/config
+    #     ports: 
+    #     # - 943:943 # Using letsencrypt
+    #     - 9443:9443
+    #     - 1194:1194/udp
+    #     restart: unless-stopped
     mariadb: # Database
         image: linuxserver/mariadb
         container_name: mariadb
@@ -136,6 +136,21 @@ services:
         - "222:22"
         depends_on:
         - mariadb
+    duplicati: # Backing up
+        image: linuxserver/duplicati
+        container_name: duplicati
+        environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=Europe/Oslo
+        # - CLI_ARGS= #optional
+        volumes:
+        - ${HOME_PATH}/duplicati/config:/config
+        - ${HOME_PATH}:/source-config
+        - ${DATA_PATH}:/source-data
+        ports:
+        - 8200:8200
+        restart: unless-stopped
 
 networks:
     mailcowdockerized_mailcow-network:
